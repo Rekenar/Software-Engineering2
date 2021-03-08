@@ -4,64 +4,69 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.util.Arrays;
-
-public class MainActivity extends AppCompatActivity {
-    EditText editTextNumber;
-    TextView editTextOutput;
+public class MainActivity extends AppCompatActivity{
+    EditText inputField;
+    TextView outputField;
+    String answer;
+    Button calculateButton;
+    Button tCPButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        editTextNumber = (EditText)findViewById(R.id.editTextNumber);
-        editTextOutput = (TextView) findViewById(R.id.textView);
+        inputField = (EditText)findViewById(R.id.inputField);
+        outputField = (TextView) findViewById(R.id.outputField);
+        calculateButton = (Button) findViewById(R.id.calc);
+        tCPButton = (Button) findViewById(R.id.getInfo);
+
+        calculateButton.setOnClickListener((View v)-> {
+            alternateQuersumme();
+        });
+
+        tCPButton.setOnClickListener((View v) -> {
+            Thread thread = startThread();
+            thread.start();
+        });
     }
 
-    public void send(View v){
-        editTextOutput.setText(editTextNumber.getText());
+    public void send(){
+        TCPConnection tcp = new TCPConnection("se2-isys.aau.at", 53212);
+
+        tcp.writeLine(inputField.getText().toString());
+        answer = tcp.readLine();
+
+        outputField.setText(answer);
     }
 
-    public void sort(View v){
-        String mNr = editTextNumber.getText().toString();
+    public Thread startThread(){
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                try{
+                    send();
+                }catch (Exception e){
+                    answer = "crashed";
+                }
+            }
+        };
+        return thread;
+    }
+
+    public void alternateQuersumme(){
+        String mNr = inputField.getText().toString();
+        AlternateQuersumme aq = new AlternateQuersumme();
         int[] array = new int[mNr.length()];
 
-        stringToIntArray(mNr, array);
+        aq.stringToIntArray(mNr, array);
 
-        int sum = alternateQuersummeForward(array);
+        int sum = aq.alternateQuersummeForward(array);
 
         setEditTextOutputAufgabe2(sum);
-    }
-
-    /**
-     * Convert the String Input to an int array
-     * @param mNr
-     * @param array
-     */
-    public void stringToIntArray(String mNr, int[] array){
-        for(int i = 0; i < mNr.length(); i++){
-            array[i] = Integer.parseInt(String.valueOf(mNr.charAt(i)));
-        }
-    }
-
-    /**
-     * Form the alternating cross sum
-     * @param array
-     * @return
-     */
-    public int alternateQuersummeForward(int[] array){
-        int sum = 0;
-        for(int i = 0; i < array.length;i++){
-            if(i % 2 == 0){
-                sum+=array[array.length-1-i];
-            }else{
-                sum-=array[array.length-1-i];
-            }
-        }
-        return sum;
     }
 
     /**
@@ -70,9 +75,9 @@ public class MainActivity extends AppCompatActivity {
      */
     public void setEditTextOutputAufgabe2(int sum){
         if(sum%2 == 0){
-            editTextOutput.setText("Even" + " " + sum);
+            outputField.setText("Even? True\nSum: " + sum);
         }else{
-            editTextOutput.setText("Uneven" + " " + sum);
+            outputField.setText("Even? False\nSum: " + sum);
         }
     }
 }
